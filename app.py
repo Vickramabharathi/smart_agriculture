@@ -3,6 +3,7 @@ import json
 from flask import Flask, render_template, request, jsonify
 from werkzeug.exceptions import HTTPException
 from config.config import config
+from models.database import db
 import requests
 from datetime import datetime
 import random
@@ -32,6 +33,9 @@ def create_app(config_name=None):
     
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+    
+    # Initialize database (dummy in-memory implementation)
+    db.init_app(app)
     
     app.logger.info(f"Using config: {config_name}")
     app.logger.info("Running in database-free mode - all data is in-memory only")
