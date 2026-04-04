@@ -53,9 +53,8 @@ def detect_disease(crop_id):
 @disease_bp.route('/<int:crop_id>/history', methods=['GET'])
 def disease_history(crop_id):
     """Get disease detection history"""
-    detections = DiseaseDetection.query.filter_by(crop_id=crop_id).order_by(
-        DiseaseDetection.detected_at.desc()
-    ).all()
+    detections = DiseaseDetection.query.filter_by(crop_id=crop_id).all()
+    detections = sorted(detections, key=lambda d: d.detected_at, reverse=True)
     
     return jsonify([{
         'id': d.id,

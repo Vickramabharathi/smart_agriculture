@@ -36,7 +36,8 @@ def crop_health(crop_id):
     # Get recent disease detections
     diseases = DiseaseDetection.query.filter_by(
         crop_id=crop_id, status='active'
-    ).order_by(DiseaseDetection.detected_at.desc()).limit(3).all()
+    ).all()
+    diseases = sorted(diseases, key=lambda d: d.detected_at, reverse=True)[:3]
     
     return jsonify({
         'crop_id': crop.id,

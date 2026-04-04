@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from models.database import db, Farm, IrrigationControl, SensorReading
 from datetime import datetime
-from sqlalchemy import desc
 
 irrigation_bp = Blueprint('irrigation', __name__)
 
@@ -50,10 +49,12 @@ def irrigation_status(farm_id):
     config = IrrigationControl.query.filter_by(farm_id=farm_id).first()
     
     # Get latest moisture reading
-    latest_moisture = SensorReading.query.filter_by(
+    moisture_readings = SensorReading.query.filter_by(
         farm_id=farm_id,
         sensor_type='moisture'
-    ).order_by(desc(SensorReading.timestamp)).first()
+    ).all()
+    moisture_readings = sorted(moisture_readings, key=lambda r: r.timestamp, reverse=True)
+    latest_moisture = moisture_readings[0] if moisture_readings else None
     
     if not config:
         return jsonify({'message': 'No configuration found'}), 404
@@ -113,9 +114,11 @@ def irrigation_schedule(farm_id):
         return jsonify({'message': 'No crop found'}), 404
     
     # Get latest sensor readings
-    moisture = SensorReading.query.filter_by(
+    moisture_readings = SensorReading.query.filter_by(
         farm_id=farm_id, sensor_type='moisture'
-    ).order_by(desc(SensorReading.timestamp)).first()
+    ).all()
+    moisture_readings = sorted(moisture_readings, key=lambda r: r.timestamp, reverse=True)
+    moisture = moisture_readings[0] if moisture_readings else None
     
     schedule = current_app.irrigation_optimizer.calculate_irrigation_schedule(
         crop.crop_name,

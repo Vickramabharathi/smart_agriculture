@@ -11,10 +11,9 @@ def get_sensor_readings(farm_id):
     hours = request.args.get('hours', 24, type=int)
     since = datetime.utcnow() - timedelta(hours=hours)
     
-    readings = SensorReading.query.filter(
-        SensorReading.farm_id == farm_id,
-        SensorReading.timestamp >= since
-    ).order_by(SensorReading.timestamp.desc()).all()
+    readings = SensorReading.query.filter_by(farm_id=farm_id).all()
+    readings = [r for r in readings if r.timestamp >= since]
+    readings = sorted(readings, key=lambda r: r.timestamp, reverse=True)
     
     return jsonify({
         'farm_id': farm_id,

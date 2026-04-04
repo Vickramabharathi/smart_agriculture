@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from models.database import db, Farm, Crop, SensorReading, YieldPrediction, MarketData
 from datetime import datetime, timedelta
-from sqlalchemy import func
 
 analytics_bp = Blueprint('analytics', __name__)
 
@@ -16,10 +15,8 @@ def farm_overview(farm_id):
     
     # Get average sensor readings from last 7 days
     week_ago = datetime.utcnow() - timedelta(days=7)
-    sensors = SensorReading.query.filter(
-        SensorReading.farm_id == farm_id,
-        SensorReading.timestamp >= week_ago
-    ).all()
+    sensors = SensorReading.query.filter_by(farm_id=farm_id).all()
+    sensors = [s for s in sensors if s.timestamp >= week_ago]
     
     # Calculate averages by sensor type
     sensor_stats = {}
@@ -53,10 +50,8 @@ def yield_forecast(crop_id):
     
     # Get sensor data for past 30 days
     month_ago = datetime.utcnow() - timedelta(days=30)
-    sensors = SensorReading.query.filter(
-        SensorReading.farm_id == crop.farm_id,
-        SensorReading.timestamp >= month_ago
-    ).all()
+    sensors = SensorReading.query.filter_by(farm_id=crop.farm_id).all()
+    sensors = [s for s in sensors if s.timestamp >= month_ago]
     
     # Extract averages
     moisture_readings = [s.value for s in sensors if s.sensor_type == 'moisture']
@@ -107,9 +102,9 @@ def market_intelligence(crop_id):
         return jsonify({'message': 'Crop not found'}), 404
     
     # Get market data for this crop
-    market_data = MarketData.query.filter_by(crop_name=crop.crop_name).order_by(
-        MarketData.last_updated.desc()
-    ).first()
+    market_data = MarketData.query.filter_by(crop_name=crop.crop_name).all()
+    market_data = sorted(market_data, key=lambda m: m.last_updated, reverse=True)
+    market_data = market_data[0] if market_data else None
     
     if not market_data:
         # Return sample data
@@ -142,9 +137,8 @@ def alerts_summary(farm_id):
     if not farm:
         return jsonify({'message': 'Farm not found'}), 404
     
-    alerts = Alert.query.filter_by(farm_id=farm_id).order_by(
-        Alert.created_at.desc()
-    ).limit(10).all()
+    alerts = Alert.query.filter_by(farm_id=farm_id).all()
+    alerts = sorted(alerts, key=lambda a: a.created_at, reverse=True)[:10]
     
     return jsonify({
         'farm_id': farm_id,
@@ -173,10 +167,8 @@ def pest_risk_assessment(farm_id):
     
     # Get current weather conditions
     week_ago = datetime.utcnow() - timedelta(days=7)
-    sensors = SensorReading.query.filter(
-        SensorReading.farm_id == farm_id,
-        SensorReading.timestamp >= week_ago
-    ).all()
+    sensors = SensorReading.query.filter_by(farm_id=farm_id).all()
+    sensors = [s for s in sensors if s.timestamp >= week_ago]
     
     temp_readings = [s.value for s in sensors if s.sensor_type == 'temperature']
     humidity_readings = [s.value for s in sensors if s.sensor_type == 'humidity']

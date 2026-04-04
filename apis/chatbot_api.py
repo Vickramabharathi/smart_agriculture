@@ -42,9 +42,8 @@ def chatbot_query():
 @chatbot_bp.route('/history/<int:user_id>', methods=['GET'])
 def chat_history(user_id):
     """Get chat history for user"""
-    chats = ChatHistory.query.filter_by(user_id=user_id).order_by(
-        ChatHistory.timestamp.desc()
-    ).limit(50).all()
+    chats = ChatHistory.query.filter_by(user_id=user_id).all()
+    chats = sorted(chats, key=lambda c: c.timestamp, reverse=True)[:50]
     
     return jsonify([{
         'id': c.id,

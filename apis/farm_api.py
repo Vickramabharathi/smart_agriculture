@@ -81,9 +81,8 @@ def farm_dashboard(farm_id):
     if not farm:
         return jsonify({'message': 'Farm not found'}), 404
 
-    sensors = SensorReading.query.filter_by(farm_id=farm_id).order_by(
-        SensorReading.timestamp.desc()
-    ).limit(5).all()
+    sensors = SensorReading.query.filter_by(farm_id=farm_id).all()
+    sensors = sorted(sensors, key=lambda s: s.timestamp, reverse=True)[:5]
 
     return jsonify({
         'farm_id': farm.id,

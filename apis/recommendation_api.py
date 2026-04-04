@@ -48,7 +48,8 @@ def fertilizer_recommendation(crop_id):
     recommendations = Recommendation.query.filter_by(
         crop_id=crop_id,
         recommendation_type='fertilizer'
-    ).order_by(Recommendation.created_at.desc()).limit(5).all()
+    ).all()
+    recommendations = sorted(recommendations, key=lambda r: r.created_at, reverse=True)[:5]
     
     return jsonify([{
         'id': r.id,
@@ -83,9 +84,8 @@ def crop_recommendation(crop_id):
 @recommendation_bp.route('/<int:crop_id>/all', methods=['GET'])
 def all_recommendations(crop_id):
     """Get all active recommendations for a crop"""
-    recommendations = Recommendation.query.filter_by(crop_id=crop_id).order_by(
-        Recommendation.created_at.desc()
-    ).all()
+    recommendations = Recommendation.query.filter_by(crop_id=crop_id).all()
+    recommendations = sorted(recommendations, key=lambda r: r.created_at, reverse=True)
     
     return jsonify([{
         'id': r.id,
