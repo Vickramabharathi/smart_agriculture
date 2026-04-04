@@ -1,73 +1,75 @@
-from flask_sqlalchemy import SQLAlchemy
+"""
+In-memory database models - no database required
+All data is stored in memory and will be lost on app restart
+"""
 from datetime import datetime
 from enum import Enum
 import json
 
-db = SQLAlchemy()
+# Dummy database for compatibility with Flask-SQLAlchemy free imports
+class DummyDB:
+    def init_app(self, app):
+        pass
+
+db = DummyDB()
 
 class UserRole(Enum):
     FARMER = "farmer"
     ADMIN = "admin"
     EXPERT = "expert"
 
-class User(db.Model):
-    __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum(UserRole), default=UserRole.FARMER)
-    phone = db.Column(db.String(20))
-    address = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    farms = db.relationship('Farm', backref='owner', lazy=True, cascade='all, delete-orphan')
-    alerts = db.relationship('Alert', backref='user', lazy=True, cascade='all, delete-orphan')
+# Dummy model classes for API compatibility (no database)
+class User:
+    def __init__(self, username, email, password_hash, role=UserRole.FARMER, phone=None, address=None):
+        self.id = 1
+        self.username = username
+        self.email = email
+        self.password_hash = password_hash
+        self.role = role
+        self.phone = phone
+        self.address = address
+        self.created_at = datetime.utcnow()
+        self.farms = []
+        self.alerts = []
 
-class Farm(db.Model):
-    __tablename__ = 'farms'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    name = db.Column(db.String(120), nullable=False)
-    location = db.Column(db.String(255), nullable=False)
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
-    area = db.Column(db.Float)  # in hectares
-    soil_type = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    crops = db.relationship('Crop', backref='farm', lazy=True, cascade='all, delete-orphan')
-    sensor_readings = db.relationship('SensorReading', backref='farm', lazy=True, cascade='all, delete-orphan')
+class Farm:
+    def __init__(self, user_id, name, location, latitude=None, longitude=None, area=None, soil_type=None):
+        self.id = 1
+        self.user_id = user_id
+        self.name = name
+        self.location = location
+        self.latitude = latitude
+        self.longitude = longitude
+        self.area = area
+        self.soil_type = soil_type
+        self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+        self.crops = []
+        self.sensor_readings = []
 
-class Crop(db.Model):
-    __tablename__ = 'crops'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    farm_id = db.Column(db.Integer, db.ForeignKey('farms.id'), nullable=False)
-    crop_name = db.Column(db.String(100), nullable=False)
-    variety = db.Column(db.String(100))
-    planting_date = db.Column(db.DateTime)
-    expected_harvest = db.Column(db.DateTime)
-    area = db.Column(db.Float)  # in hectares
-    current_health_score = db.Column(db.Float, default=100.0)  # 0-100
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    disease_history = db.relationship('DiseaseDetection', backref='crop', lazy=True, cascade='all, delete-orphan')
-    recommendations = db.relationship('Recommendation', backref='crop', lazy=True, cascade='all, delete-orphan')
+class Crop:
+    def __init__(self, farm_id, crop_name, variety=None, planting_date=None, expected_harvest=None, area=None):
+        self.id = 1
+        self.farm_id = farm_id
+        self.crop_name = crop_name
+        self.variety = variety
+        self.planting_date = planting_date
+        self.expected_harvest = expected_harvest
+        self.area = area
+        self.current_health_score = 100.0
+        self.created_at = datetime.utcnow()
+        self.disease_history = []
+        self.recommendations = []
 
-class SensorReading(db.Model):
-    __tablename__ = 'sensor_readings'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    farm_id = db.Column(db.Integer, db.ForeignKey('farms.id'), nullable=False)
-    sensor_type = db.Column(db.String(50), nullable=False)  # moisture, temperature, humidity, ph, water_level
-    value = db.Column(db.Float, nullable=False)
-    unit = db.Column(db.String(20))  # %, °C, pH, mm
-    location = db.Column(db.String(255))  # zone A, zone B, etc
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+class SensorReading:
+    def __init__(self, farm_id, sensor_type, value, unit=None, location=None):
+        self.id = 1
+        self.farm_id = farm_id
+        self.sensor_type = sensor_type
+        self.value = value
+        self.unit = unit
+        self.location = location
+        self.timestamp = datetime.utcnow()
     
     def to_dict(self):
         return {
@@ -79,110 +81,96 @@ class SensorReading(db.Model):
             'timestamp': self.timestamp.isoformat()
         }
 
-class DiseaseDetection(db.Model):
-    __tablename__ = 'disease_detections'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    crop_id = db.Column(db.Integer, db.ForeignKey('crops.id'), nullable=False)
-    image_path = db.Column(db.String(255))
-    disease_name = db.Column(db.String(100))
-    disease_confidence = db.Column(db.Float)  # 0-1
-    pest_detected = db.Column(db.Boolean, default=False)
-    pest_type = db.Column(db.String(100))
-    severity = db.Column(db.String(20))  # mild, moderate, severe
-    treatment_recommendation = db.Column(db.Text)
-    detected_at = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(20), default='active')  # active, treated, resolved
+class DiseaseDetection:
+    def __init__(self, crop_id, disease_name=None, disease_confidence=None, severity='mild'):
+        self.id = 1
+        self.crop_id = crop_id
+        self.image_path = None
+        self.disease_name = disease_name
+        self.disease_confidence = disease_confidence
+        self.pest_detected = False
+        self.pest_type = None
+        self.severity = severity
+        self.treatment_recommendation = None
+        self.detected_at = datetime.utcnow()
+        self.status = 'active'
 
-class Recommendation(db.Model):
-    __tablename__ = 'recommendations'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    crop_id = db.Column(db.Integer, db.ForeignKey('crops.id'), nullable=False)
-    recommendation_type = db.Column(db.String(50))  # irrigation, fertilizer, pesticide, crop_change
-    
-    # Fertilizer specific
-    npk_nitrogen = db.Column(db.Float)
-    npk_phosphorus = db.Column(db.Float)
-    npk_potassium = db.Column(db.Float)
-    fertilizer_name = db.Column(db.String(100))
-    
-    # Irrigation specific
-    irrigation_amount = db.Column(db.Float)  # liters
-    irrigation_schedule = db.Column(db.String(100))  # daily, 2 days, weekly, etc
-    
-    # Crop recommendation
-    recommended_crop = db.Column(db.String(100))
-    compatibility_score = db.Column(db.Float)
-    
-    reason = db.Column(db.Text)
-    priority = db.Column(db.String(20))  # low, medium, high
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+class Recommendation:
+    def __init__(self, crop_id, recommendation_type, reason=None, priority='medium'):
+        self.id = 1
+        self.crop_id = crop_id
+        self.recommendation_type = recommendation_type
+        self.npk_nitrogen = None
+        self.npk_phosphorus = None
+        self.npk_potassium = None
+        self.fertilizer_name = None
+        self.irrigation_amount = None
+        self.irrigation_schedule = None
+        self.recommended_crop = None
+        self.compatibility_score = None
+        self.reason = reason
+        self.priority = priority
+        self.created_at = datetime.utcnow()
 
-class Alert(db.Model):
-    __tablename__ = 'alerts'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    farm_id = db.Column(db.Integer, db.ForeignKey('farms.id'))
-    alert_type = db.Column(db.String(50))  # disease, pest, weather, sensor, automation
-    title = db.Column(db.String(255), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-    severity = db.Column(db.String(20))  # info, warning, critical
-    is_predictive = db.Column(db.Boolean, default=False)  # True if predicted future risk
-    prediction_days = db.Column(db.Integer)  # predict X days in advance
-    is_read = db.Column(db.Boolean, default=False)
-    is_sent_sms = db.Column(db.Boolean, default=False)
-    is_sent_email = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+class Alert:
+    def __init__(self, user_id, alert_type, title, message, severity='info', farm_id=None):
+        self.id = 1
+        self.user_id = user_id
+        self.farm_id = farm_id
+        self.alert_type = alert_type
+        self.title = title
+        self.message = message
+        self.severity = severity
+        self.is_predictive = False
+        self.prediction_days = None
+        self.is_read = False
+        self.is_sent_sms = False
+        self.is_sent_email = False
+        self.created_at = datetime.utcnow()
 
-class IrrigationControl(db.Model):
-    __tablename__ = 'irrigation_control'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    farm_id = db.Column(db.Integer, db.ForeignKey('farms.id'), nullable=False)
-    is_automated = db.Column(db.Boolean, default=False)
-    moisture_threshold = db.Column(db.Float, default=40.0)  # trigger irrigation below this %
-    max_water_per_day = db.Column(db.Float)  # liters
-    is_motor_on = db.Column(db.Boolean, default=False)
-    motor_on_time = db.Column(db.DateTime)
-    motor_off_time = db.Column(db.DateTime)
-    last_irrigation = db.Column(db.DateTime)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+class IrrigationControl:
+    def __init__(self, farm_id, is_automated=False, moisture_threshold=40.0):
+        self.id = 1
+        self.farm_id = farm_id
+        self.is_automated = is_automated
+        self.moisture_threshold = moisture_threshold
+        self.max_water_per_day = None
+        self.is_motor_on = False
+        self.motor_on_time = None
+        self.motor_off_time = None
+        self.last_irrigation = None
+        self.updated_at = datetime.utcnow()
 
-class MarketData(db.Model):
-    __tablename__ = 'market_data'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    crop_name = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(255), nullable=False)
-    current_price = db.Column(db.Float)  # per kg or per unit
-    min_price_30days = db.Column(db.Float)
-    max_price_30days = db.Column(db.Float)
-    avg_price_30days = db.Column(db.Float)
-    trend = db.Column(db.String(20))  # up, down, stable
-    volume_available = db.Column(db.Float)
-    quality_grade = db.Column(db.String(10))  # A, B, C, etc
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+class MarketData:
+    def __init__(self, crop_name, location, current_price=None):
+        self.id = 1
+        self.crop_name = crop_name
+        self.location = location
+        self.current_price = current_price
+        self.min_price_30days = None
+        self.max_price_30days = None
+        self.avg_price_30days = None
+        self.trend = 'stable'
+        self.volume_available = None
+        self.quality_grade = 'A'
+        self.last_updated = datetime.utcnow()
 
-class YieldPrediction(db.Model):
-    __tablename__ = 'yield_predictions'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    crop_id = db.Column(db.Integer, db.ForeignKey('crops.id'), nullable=False)
-    predicted_yield = db.Column(db.Float)  # in tons/kg
-    confidence_score = db.Column(db.Float)  # 0-1
-    prediction_model = db.Column(db.String(50))  # model used for prediction
-    factors = db.Column(db.Text)  # JSON string of factors affecting yield
-    predicted_on = db.Column(db.DateTime, default=datetime.utcnow)
+class YieldPrediction:
+    def __init__(self, crop_id, predicted_yield=None, confidence_score=0.0):
+        self.id = 1
+        self.crop_id = crop_id
+        self.predicted_yield = predicted_yield
+        self.confidence_score = confidence_score
+        self.prediction_model = 'default'
+        self.factors = '{}'
+        self.predicted_on = datetime.utcnow()
 
-class ChatHistory(db.Model):
-    __tablename__ = 'chat_history'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    user_message = db.Column(db.Text, nullable=False)
-    bot_response = db.Column(db.Text, nullable=False)
-    intent = db.Column(db.String(50))  # disease_diagnosis, pest_help, fertilizer, irrigation, etc
-    confidence = db.Column(db.Float)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+class ChatHistory:
+    def __init__(self, user_id, user_message, bot_response, intent=None):
+        self.id = 1
+        self.user_id = user_id
+        self.user_message = user_message
+        self.bot_response = bot_response
+        self.intent = intent
+        self.confidence = 0.0
+        self.timestamp = datetime.utcnow()

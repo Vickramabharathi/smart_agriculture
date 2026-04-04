@@ -3,7 +3,6 @@ import json
 from flask import Flask, render_template, request, jsonify
 from werkzeug.exceptions import HTTPException
 from config.config import config
-from models.database import db
 import requests
 from datetime import datetime
 import random
@@ -33,30 +32,9 @@ def create_app(config_name=None):
     
     app = Flask(__name__)
     app.config.from_object(config[config_name])
-    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
-    safe_db_uri = db_uri
-    if '://' in db_uri and '@' in db_uri:
-        prefix, rest = db_uri.split('://', 1)
-        creds, host = rest.split('@', 1)
-        safe_db_uri = f"{prefix}://***@{host}"
+    
     app.logger.info(f"Using config: {config_name}")
-    app.logger.info(f"Database URI: {safe_db_uri}")
-    
-    # Initialize database
-    db.init_app(app)
-    
-    # Create/refresh tables (safer version - only drop in development)
-    with app.app_context():
-        try:
-            if app.config.get('DEBUG', False) and config_name == 'development':
-                db.drop_all()
-            db.create_all()
-            app.logger.info("Database tables created/updated successfully")
-        except Exception as e:
-            app.logger.warning(f"Could not create database tables: {e}")
-            app.logger.warning(f"Config: {config_name}, Database URI: {safe_db_uri}")
-            # Continue anyway - allow app to start even if DB init fails
-            # Tokens or cached data might still work
+    app.logger.info("Running in database-free mode - all data is in-memory only")
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')

@@ -1,24 +1,9 @@
 import os
 from datetime import timedelta
 
-def get_database_uri(require_env=False):
-    """Get database URI from environment or use default."""
-    db_url = os.environ.get('DATABASE_URL')
-    if db_url:
-        # Convert DATABASE_URL format to SQLAlchemy format if needed
-        if db_url.startswith('mysql://'):
-            db_url = db_url.replace('mysql://', 'mysql+mysqlconnector://', 1)
-        elif db_url.startswith('mysql+pymysql://'):
-            db_url = db_url.replace('mysql+pymysql://', 'mysql+mysqlconnector://', 1)
-        return db_url
-    if require_env:
-        raise RuntimeError('DATABASE_URL is required in production environment')
-    return 'mysql+mysqlconnector://root:1234@localhost:3306/smart_agriculture'
-
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-in-production'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=30)
     
@@ -41,19 +26,14 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
-    # MySQL Configuration (using mysql-connector-python):
-    SQLALCHEMY_DATABASE_URI = 'mysql+mysqlconnector://root:1234@localhost:3306/smart_agriculture'
 
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    # For Vercel, use SQLite as fallback if DATABASE_URL is not set
-    SQLALCHEMY_DATABASE_URI = get_database_uri(require_env=False) or 'sqlite:///smart_agriculture.db'
 
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
 
 config = {
     'development': DevelopmentConfig,
