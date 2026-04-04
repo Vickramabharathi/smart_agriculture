@@ -51,9 +51,12 @@ def create_app(config_name=None):
             if app.config.get('DEBUG', False) and config_name == 'development':
                 db.drop_all()
             db.create_all()
+            app.logger.info("Database tables created/updated successfully")
         except Exception as e:
-            print(f"Warning: Could not create tables: {e}")
-            # Continue anyway - tables might already exist
+            app.logger.warning(f"Could not create database tables: {e}")
+            app.logger.warning(f"Config: {config_name}, Database URI: {safe_db_uri}")
+            # Continue anyway - allow app to start even if DB init fails
+            # Tokens or cached data might still work
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -173,8 +176,7 @@ def create_app(config_name=None):
     
     return app
 
-# Create app instance
-app = create_app(os.environ.get('FLASK_ENV', 'development'))
-
+# Only create app here if running directly (development)
 if __name__ == "__main__":
+    app = create_app(os.environ.get('FLASK_ENV', 'development'))
     app.run(debug=True, host='0.0.0.0', port=5000)
