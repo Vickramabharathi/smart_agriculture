@@ -1,6 +1,7 @@
 import os
 import json
 from flask import Flask, render_template, request, jsonify
+from werkzeug.exceptions import HTTPException
 from config.config import config
 from models.database import db
 import requests
@@ -32,6 +33,14 @@ def create_app(config_name=None):
     
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    safe_db_uri = db_uri
+    if '://' in db_uri and '@' in db_uri:
+        prefix, rest = db_uri.split('://', 1)
+        creds, host = rest.split('@', 1)
+        safe_db_uri = f"{prefix}://***@{host}"
+    app.logger.info(f"Using config: {config_name}")
+    app.logger.info(f"Database URI: {safe_db_uri}")
     
     # Initialize database
     db.init_app(app)
@@ -58,6 +67,21 @@ def create_app(config_name=None):
     app.register_blueprint(analytics_bp, url_prefix='/api/analytics')
     app.register_blueprint(weather_bp, url_prefix='/api/weather')
     app.register_blueprint(marketplace_bp, url_prefix='/api/marketplace')
+
+    @app.errorhandler(Exception)
+    def handle_api_exceptions(error):
+        if isinstance(error, HTTPException):
+            status = error.code or 500
+            message = error.description
+        else:
+            status = 500
+            message = str(error)
+
+        app.logger.exception('Unhandled exception')
+
+        if request.path.startswith('/api/'):
+            return jsonify({'message': 'Server error', 'details': message}), status
+        return render_template('index.html'), status
     
     # Original routes
     @app.route('/')

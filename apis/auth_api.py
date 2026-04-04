@@ -32,9 +32,14 @@ def register():
         role=UserRole(role_value)
     )
     
-    db.session.add(user)
-    db.session.commit()
-    
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception('Register error')
+        return jsonify({'message': 'Database error during registration', 'details': str(exc)}), 500
+
     token = generate_token(user.id)
     
     return jsonify({
@@ -70,26 +75,30 @@ def login():
         # Normalize older stored roles if schema changed
         user.role = UserRole(user.role.lower())
 
-    if not user or not check_password(user.password_hash, data['password']):
-        return jsonify({'message': 'Invalid credentials'}), 401
+    try:
+        if not user or not check_password(user.password_hash, data['password']):
+            return jsonify({'message': 'Invalid credentials'}), 401
 
-    token = generate_token(user.id)
+        token = generate_token(user.id)
 
-    return jsonify({
-        'message': 'Login successful',
-        'user_id': user.id,
-        'username': user.username,
-        'token': token,
-        'role': user.role.value,
-        'user': {
-            'id': user.id,
+        return jsonify({
+            'message': 'Login successful',
+            'user_id': user.id,
             'username': user.username,
-            'email': user.email,
+            'token': token,
             'role': user.role.value,
-            'phone': user.phone,
-            'address': user.address
-        }
-    }), 200
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role.value,
+                'phone': user.phone,
+                'address': user.address
+            }
+        }), 200
+    except Exception as exc:
+        current_app.logger.exception('Login error')
+        return jsonify({'message': 'Database error during login', 'details': str(exc)}), 500
 
 @auth_bp.route('/profile', methods=['GET'])
 def get_profile():
