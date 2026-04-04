@@ -47,7 +47,8 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = get_database_uri(require_env=True)
+    # For Vercel, use SQLite as fallback if DATABASE_URL is not set
+    SQLALCHEMY_DATABASE_URI = get_database_uri(require_env=False) or 'sqlite:///smart_agriculture.db'
 
 class TestingConfig(Config):
     """Testing configuration"""
