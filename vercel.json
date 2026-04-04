@@ -1,22 +1,12 @@
 {
-  "buildCommand": "pip install -r requirements.txt",
-  "devCommand": "python app.py",
-  "installCommand": "pip install -r requirements.txt",
-  "framework": "flask",
+  "version": 3,
   "builds": [
     {
       "src": "wsgi.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "50mb",
         "runtime": "python3.12"
       }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "wsgi.py"
     }
   ]
 }
