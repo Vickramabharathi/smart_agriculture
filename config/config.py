@@ -1,6 +1,20 @@
 import os
 from datetime import timedelta
 
+def get_database_uri():
+    """Get database URI from environment or use default"""
+    # For production/Vercel, use environment variable
+    if os.environ.get('DATABASE_URL'):
+        db_url = os.environ.get('DATABASE_URL')
+        # Convert DATABASE_URL format to SQLAlchemy format if needed
+        if 'mysql://' in db_url:
+            db_url = db_url.replace('mysql://', 'mysql+mysqlconnector://')
+        elif 'mysql+pymysql://' in db_url:
+            db_url = db_url.replace('mysql+pymysql://', 'mysql+mysqlconnector://')
+        return db_url
+    # Default for local development
+    return 'mysql+mysqlconnector://root:1234@localhost:3306/smart_agriculture'
+
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
@@ -29,10 +43,11 @@ class DevelopmentConfig(Config):
     DEBUG = True
     # MySQL Configuration (using mysql-connector-python):
     SQLALCHEMY_DATABASE_URI = 'mysql+mysqlconnector://root:1234@localhost:3306/smart_agriculture'
+
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = get_database_uri()
 
 class TestingConfig(Config):
     """Testing configuration"""

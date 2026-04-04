@@ -21,18 +21,30 @@ from apis.weather_api import weather_bp
 from apis.marketplace_api import marketplace_bp
 
 # Initialize Flask app
-def create_app(config_name='development'):
+def create_app(config_name=None):
+    """Create Flask application with proper config detection"""
+    # Auto-detect environment if not provided
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'development')
+        # If DATABASE_URL is set, use production config
+        if os.environ.get('DATABASE_URL'):
+            config_name = 'production'
+    
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     
     # Initialize database
     db.init_app(app)
     
-    # Create/refresh tables in development to match models (safe for local dev only)
+    # Create/refresh tables (safer version - only drop in development)
     with app.app_context():
-        if app.config.get('DEBUG', False):
-            db.drop_all()
-        db.create_all()
+        try:
+            if app.config.get('DEBUG', False) and config_name == 'development':
+                db.drop_all()
+            db.create_all()
+        except Exception as e:
+            print(f"Warning: Could not create tables: {e}")
+            # Continue anyway - tables might already exist
     
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')

@@ -1,0 +1,27 @@
+{
+  "buildCommand": "pip install -r requirements.txt",
+  "devCommand": "python app.py",
+  "installCommand": "pip install -r requirements.txt",
+  "framework": "flask",
+  "env": {
+    "FLASK_ENV": "production",
+    "PYTHON_VERSION": "3.12"
+  },
+  "envPrefix": "",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/wsgi.py"
+    }
+  ],
+  "builds": [
+    {
+      "src": "wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb",
+        "runtime": "python3.12"
+      }
+    }
+  ]
+}
