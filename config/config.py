@@ -1,18 +1,18 @@
 import os
 from datetime import timedelta
 
-def get_database_uri():
-    """Get database URI from environment or use default"""
-    # For production/Vercel, use environment variable
-    if os.environ.get('DATABASE_URL'):
-        db_url = os.environ.get('DATABASE_URL')
+def get_database_uri(require_env=False):
+    """Get database URI from environment or use default."""
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url:
         # Convert DATABASE_URL format to SQLAlchemy format if needed
-        if 'mysql://' in db_url:
-            db_url = db_url.replace('mysql://', 'mysql+mysqlconnector://')
-        elif 'mysql+pymysql://' in db_url:
-            db_url = db_url.replace('mysql+pymysql://', 'mysql+mysqlconnector://')
+        if db_url.startswith('mysql://'):
+            db_url = db_url.replace('mysql://', 'mysql+mysqlconnector://', 1)
+        elif db_url.startswith('mysql+pymysql://'):
+            db_url = db_url.replace('mysql+pymysql://', 'mysql+mysqlconnector://', 1)
         return db_url
-    # Default for local development
+    if require_env:
+        raise RuntimeError('DATABASE_URL is required in production environment')
     return 'mysql+mysqlconnector://root:1234@localhost:3306/smart_agriculture'
 
 class Config:
@@ -47,7 +47,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = get_database_uri()
+    SQLALCHEMY_DATABASE_URI = get_database_uri(require_env=True)
 
 class TestingConfig(Config):
     """Testing configuration"""
