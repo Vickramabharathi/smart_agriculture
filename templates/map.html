@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Map Visualization</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        #map {
+            height: 70vh;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .map-container {
+            position: relative;
+        }
+        .map-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .farm-marker {
+            background-color: #28a745;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .farm-popup {
+            min-width: 250px;
+        }
+        .farm-popup h6 {
+            color: #28a745;
+            margin-bottom: 8px;
+        }
+        .farm-popup .btn {
+            margin: 2px;
+        }
+        .zone-highlight {
+            fill-opacity: 0.3;
+            stroke-width: 2;
+            stroke: #007bff;
+        }
+        .legend {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .zone-selector {
+            margin-bottom: 15px;
+        }
+        .zone-selector select {
+            border-radius: 20px;
+            padding: 8px 16px;
+            border: 2px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-leaf"></i> Smart Agriculture
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/dashboard">Dashboard</a>
+                <a class="nav-link" href="/crops">Crops</a>
+                <a class="nav-link" href="/alerts">Alerts</a>
+                <a class="nav-link" href="/chatbot">Chatbot</a>
+                <a class="nav-link active" href="/map">Map</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="stats-card">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h5><i class="fas fa-map-marked-alt"></i> Total Farms</h5>
+                            <h3 id="totalFarms">0</h3>
+                        </div>
+                        <div class="col-md-3">
+                            <h5><i class="fas fa-seedling"></i> Active Crops</h5>
+                            <h3 id="activeCrops">0</h3>
+                        </div>
+                        <div class="col-md-3">
+                            <h5><i class="fas fa-tint"></i> Irrigation Zones</h5>
+                            <h3 id="irrigationZones">0</h3>
+                        </div>
+                        <div class="col-md-3">
+                            <h5><i class="fas fa-chart-area"></i> Total Area</h5>
+                            <h3 id="totalArea">0 ha</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-map"></i> Farm Map Visualization</h4>
+                        <div class="zone-selector">
+                            <select id="zoneFilter" class="form-select">
+                                <option value="all">All Zones</option>
+                                <option value="north">North Zone</option>
+                                <option value="south">South Zone</option>
+                                <option value="east">East Zone</option>
+                                <option value="west">West Zone</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="map-container">
+                            <div id="map"></div>
+                            <div class="map-controls">
+                                <div class="legend">
+                                    <h6>Legend</h6>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background: #28a745;"></div>
+                                        <span>Active Farm</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background: #ffc107;"></div>
+                                        <span>Warning</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <div class="legend-color" style="background: #dc3545;"></div>
+                                        <span>Critical</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([20.5937, 78.9629], 5); // Center on India
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Sample farm data (in production, fetch from API)
+        const farms = [
+            {
+                id: 1,
+                name: "Green Valley Farm",
+                location: [28.6139, 77.2090], // Delhi
+                area: 25,
+                crop: "Wheat",
+                status: "active",
+                zone: "north",
+                moisture: 65,
+                temperature: 28
+            },
+            {
+                id: 2,
+                name: "Sunrise Plantation",
+                location: [19.0760, 72.8777], // Mumbai
+                area: 18,
+                crop: "Rice",
+                status: "warning",
+                zone: "west",
+                moisture: 45,
+                temperature: 32
+            },
+            {
+                id: 3,
+                name: "Golden Harvest",
+                location: [13.0827, 80.2707], // Chennai
+                area: 32,
+                crop: "Cotton",
+                status: "active",
+                zone: "south",
+                moisture: 55,
+                temperature: 30
+            },
+            {
+                id: 4,
+                name: "River Bend Farm",
+                location: [22.5726, 88.3639], // Kolkata
+                area: 20,
+                crop: "Sugarcane",
+                status: "critical",
+                zone: "east",
+                moisture: 35,
+                temperature: 35
+            }
+        ];
+
+        let farmMarkers = [];
+        let zonePolygons = {};
+
+        // Create zone boundaries (simplified)
+        const zones = {
+            north: [
+                [25, 75], [25, 85], [30, 85], [30, 75]
+            ],
+            south: [
+                [10, 75], [10, 85], [15, 85], [15, 75]
+            ],
+            east: [
+                [20, 85], [20, 95], [25, 95], [25, 85]
+            ],
+            west: [
+                [15, 70], [15, 80], [25, 80], [25, 70]
+            ]
+        };
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'active': return '#28a745';
+                case 'warning': return '#ffc107';
+                case 'critical': return '#dc3545';
+                default: return '#6c757d';
+            }
+        }
+
+        function createFarmMarker(farm) {
+            const marker = L.circleMarker(farm.location, {
+                color: getStatusColor(farm.status),
+                fillColor: getStatusColor(farm.status),
+                fillOpacity: 0.8,
+                radius: 8
+            });
+
+            marker.bindPopup(`
+                <div class="farm-popup">
+                    <h6><i class="fas fa-tractor"></i> ${farm.name}</h6>
+                    <p><strong>Crop:</strong> ${farm.crop}</p>
+                    <p><strong>Area:</strong> ${farm.area} hectares</p>
+                    <p><strong>Zone:</strong> ${farm.zone.charAt(0).toUpperCase() + farm.zone.slice(1)}</p>
+                    <p><strong>Moisture:</strong> ${farm.moisture}%</p>
+                    <p><strong>Temperature:</strong> ${farm.temperature}°C</p>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewFarmDetails(${farm.id})">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="irrigateFarm(${farm.id})">
+                            <i class="fas fa-tint"></i> Irrigate
+                        </button>
+                    </div>
+                </div>
+            `);
+
+            return marker;
+        }
+
+        function addFarmsToMap(filterZone = 'all') {
+            // Clear existing markers
+            farmMarkers.forEach(marker => map.removeLayer(marker));
+            farmMarkers = [];
+
+            // Filter farms by zone
+            const filteredFarms = filterZone === 'all' ?
+                farms : farms.filter(farm => farm.zone === filterZone);
+
+            // Add markers
+            filteredFarms.forEach(farm => {
+                const marker = createFarmMarker(farm);
+                marker.addTo(map);
+                farmMarkers.push(marker);
+            });
+
+            // Update stats
+            updateStats(filteredFarms);
+        }
+
+        function highlightZone(zoneName) {
+            // Clear existing zone highlights
+            Object.values(zonePolygons).forEach(polygon => {
+                if (polygon) map.removeLayer(polygon);
+            });
+
+            if (zoneName !== 'all' && zones[zoneName]) {
+                zonePolygons[zoneName] = L.polygon(zones[zoneName], {
+                    color: '#007bff',
+                    fillColor: '#007bff',
+                    fillOpacity: 0.2,
+                    weight: 2
+                }).addTo(map);
+            }
+        }
+
+        function updateStats(farmsList) {
+            const totalFarms = farmsList.length;
+            const activeCrops = new Set(farmsList.map(f => f.crop)).size;
+            const irrigationZones = new Set(farmsList.map(f => f.zone)).size;
+            const totalArea = farmsList.reduce((sum, f) => sum + f.area, 0);
+
+            document.getElementById('totalFarms').textContent = totalFarms;
+            document.getElementById('activeCrops').textContent = activeCrops;
+            document.getElementById('irrigationZones').textContent = irrigationZones;
+            document.getElementById('totalArea').textContent = totalArea + ' ha';
+        }
+
+        function viewFarmDetails(farmId) {
+            const farm = farms.find(f => f.id === farmId);
+            if (farm) {
+                alert(`Viewing details for ${farm.name}\n\nCrop: ${farm.crop}\nArea: ${farm.area} ha\nStatus: ${farm.status}\nMoisture: ${farm.moisture}%\nTemperature: ${farm.temperature}°C`);
+            }
+        }
+
+        function irrigateFarm(farmId) {
+            const farm = farms.find(f => f.id === farmId);
+            if (farm) {
+                alert(`Starting irrigation for ${farm.name}\n\nThis will activate the irrigation system for this farm.`);
+            }
+        }
+
+        // Initialize map with all farms
+        addFarmsToMap();
+
+        // Zone filter event listener
+        document.getElementById('zoneFilter').addEventListener('change', function(e) {
+            const selectedZone = e.target.value;
+            addFarmsToMap(selectedZone);
+            highlightZone(selectedZone);
+
+            // Fit map to show selected zone or all farms
+            if (selectedZone === 'all') {
+                map.setView([20.5937, 78.9629], 5);
+            } else {
+                const zoneFarms = farms.filter(f => f.zone === selectedZone);
+                if (zoneFarms.length > 0) {
+                    const bounds = L.latLngBounds(zoneFarms.map(f => f.location));
+                    map.fitBounds(bounds, { padding: [20, 20] });
+                }
+            }
+        });
+
+        // Add layer control
+        const baseLayers = {
+            "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+            "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}')
+        };
+
+        L.control.layers(baseLayers).addTo(map);
+    </script>
+</body>
+</html>

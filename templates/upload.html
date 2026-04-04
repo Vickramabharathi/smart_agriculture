@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Agriculture - Disease Detection</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-seedling"></i>
+            <h1>Smart Agriculture</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">
+                <i class="fas fa-home"></i> Home
+            </a>
+            <a href="/dashboard" class="nav-link">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="/weather" class="nav-link">
+                <i class="fas fa-cloud-sun"></i> Weather
+            </a>
+        </div>
+    </div>
+
+    <section class="upload-hero">
+        <div class="container">
+            <div class="upload-header">
+                <h1 class="upload-title">
+                    <i class="fas fa-bug"></i>
+                    Disease Detection
+                </h1>
+                <p class="upload-subtitle">Upload a plant image and get instant AI-powered disease diagnosis</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="upload-section">
+        <div class="container center">
+            <div class="upload-card">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h2>Upload Plant Image</h2>
+                <p class="upload-description">
+                    Select a clear photo of your plant showing the affected area for accurate disease detection.
+                </p>
+
+                <form method="POST" enctype="multipart/form-data" class="upload-form">
+                    <div class="file-upload-area" id="file-upload-area">
+                        <div class="file-upload-content">
+                            <i class="fas fa-images"></i>
+                            <p>Drag & drop your image here or click to browse</p>
+                            <span class="file-upload-hint">Supported formats: JPG, PNG, JPEG (Max: 10MB)</span>
+                        </div>
+                        <input type="file" name="image" id="file-input" accept="image/*" required>
+                    </div>
+
+                    <div class="file-info" id="file-info" style="display: none;">
+                        <div class="file-details">
+                            <i class="fas fa-file-image"></i>
+                            <span id="file-name"></span>
+                            <span id="file-size"></span>
+                        </div>
+                        <button type="button" class="remove-file" onclick="removeFile()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <button type="submit" class="btn-primary upload-btn" id="upload-btn" disabled>
+                        <i class="fas fa-search"></i> Analyze Disease
+                    </button>
+                </form>
+
+                <div class="upload-tips">
+                    <h3><i class="fas fa-lightbulb"></i> Tips for Better Results:</h3>
+                    <ul>
+                        <li>Take clear, well-lit photos of the affected plant parts</li>
+                        <li>Include both healthy and diseased areas if possible</li>
+                        <li>Zoom in on specific symptoms for detailed analysis</li>
+                        <li>Avoid blurry or low-resolution images</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Smart Agriculture. Empowering farmers with technology.</p>
+        </div>
+    </footer>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const fileUploadArea = document.getElementById('file-upload-area');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const fileSize = document.getElementById('file-size');
+        const uploadBtn = document.getElementById('upload-btn');
+
+        // Drag and drop functionality
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('drag-over');
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('drag-over');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileUploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPG, PNG)');
+                return;
+            }
+
+            // Validate file size (10MB max)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                alert('File size must be less than 10MB');
+                return;
+            }
+
+            // Update UI
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'flex';
+            fileUploadArea.style.display = 'none';
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-search"></i> Analyze Disease';
+        }
+
+        function removeFile() {
+            fileInput.value = '';
+            fileInfo.style.display = 'none';
+            fileUploadArea.style.display = 'block';
+            uploadBtn.disabled = true;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Form submission with loading state
+        document.querySelector('.upload-form').addEventListener('submit', function() {
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            uploadBtn.disabled = true;
+        });
+    </script>
+</body>
+</html>

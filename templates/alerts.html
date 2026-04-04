@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts - Smart Agriculture</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        :root {
+            --primary-color: #2ecc71;
+            --secondary-color: #27ae60;
+            --accent-color: #f39c12;
+            --danger-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding-top: 80px;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 22px;
+        }
+
+        .nav-link {
+            margin: 0 10px;
+        }
+
+        .nav-link:hover {
+            color: #fff !important;
+        }
+
+        .alert-badge {
+            position: relative;
+        }
+
+        .alert-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .page-header-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-header {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-header:hover {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        .container-main {
+            max-width: 1200px;
+            margin: auto;
+            padding: 0 20px 40px 20px;
+        }
+
+        .filter-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--dark-color);
+            min-width: 80px;
+        }
+
+        .form-select {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 8px 15px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(46, 204, 113, 0.25);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--primary-color);
+            text-align: center;
+        }
+
+        .stat-box h6 {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .stat-box .number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-box.critical {
+            border-left-color: var(--danger-color);
+        }
+
+        .stat-box.critical .number {
+            color: var(--danger-color);
+        }
+
+        .stat-box.warning {
+            border-left-color: var(--accent-color);
+        }
+
+        .stat-box.warning .number {
+            color: var(--accent-color);
+        }
+
+        .alerts-list {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .alert-item {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            transition: all 0.3s ease;
+        }
+
+        .alert-item:hover {
+            background: #f8f9fa;
+        }
+
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+
+        .alert-item.unread {
+            background: rgba(46, 204, 113, 0.02);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .alert-icon {
+            font-size: 28px;
+            min-width: 50px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert-icon.critical {
+            color: var(--danger-color);
+        }
+
+        .alert-icon.warning {
+            color: var(--accent-color);
+        }
+
+        .alert-icon.info {
+            color: #3498db;
+        }
+
+        .alert-icon.success {
+            color: var(--primary-color);
+        }
+
+        .alert-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .alert-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+
+        .alert-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .alert-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-critical {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--danger-color);
+        }
+
+        .badge-warning {
+            background: rgba(243, 156, 18, 0.2);
+            color: var(--accent-color);
+        }
+
+        .badge-info {
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+        }
+
+        .badge-success {
+            background: rgba(46, 204, 113, 0.2);
+            color: var(--primary-color);
+        }
+
+        .badge-unread {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .alert-message {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .alert-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .alert-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .alert-details {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-mark {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-mark:hover {
+            background: var(--secondary-color);
+        }
+
+        .btn-delete {
+            background: #e0e0e0;
+            color: var(--dark-color);
+        }
+
+        .btn-delete:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 60px;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h4 {
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .alert-item {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .alert-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            .form-select {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="fas fa-leaf"></i> Smart Agriculture
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/farms">Farms</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/crops">Crops</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/weather">Weather</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/alerts">
+                            <i class="fas fa-bell alert-badge"></i>
+                            <span class="alert-count" id="alertCountBadge">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i> <span id="userName">User</span>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="userMenu">
+                            <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container-main">
+            <h1><i class="fas fa-bell"></i> Alerts Center</h1>
+            <p>Stay updated with all your farm notifications</p>
+            <div class="page-header-actions">
+                <button class="btn-header" onclick="markAllAsRead()">
+                    <i class="fas fa-check-circle"></i> Mark All as Read
+                </button>
+                <button class="btn-header" onclick="clearAllAlerts()">
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container-main">
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label class="filter-label">Severity:</label>
+                <select class="form-select" id="severityFilter" onchange="filterAlerts()">
+                    <option value="">All Levels</option>
+                    <option value="Critical">Critical</option>
+                    <option value="Warning">Warning</option>
+                    <option value="Info">Info</option>
+                    <option value="Success">Success</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Status:</label>
+                <select class="form-select" id="statusFilter" onchange="filterAlerts()">
+                    <option value="">All Alerts</option>
+                    <option value="unread">Unread</option>
+                    <option value="read">Read</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Type:</label>
+                <select class="form-select" id="typeFilter" onchange="filterAlerts()">
+                    <option value="">All Types</option>
+                    <option value="Disease">Disease Detection</option>
+                    <option value="Sensor">Sensor Anomaly</option>
+                    <option value="Irrigation">Irrigation</option>
+                    <option value="Weather">Weather</option>
+                    <option value="Recommendation">Recommendation</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-row">
+            <div class="stat-box critical">
+                <h6>Critical Alerts</h6>
+                <div class="number" id="criticalCount">0</div>
+            </div>
+            <div class="stat-box warning">
+                <h6>Warnings</h6>
+                <div class="number" id="warningCount">0</div>
+            </div>
+            <div class="stat-box">
+                <h6>Total Alerts</h6>
+                <div class="number" id="totalCount">0</div>
+            </div>
+            <div class="stat-box">
+                <h6>Unread</h6>
+                <div class="number" id="unreadCount">0</div>
+            </div>
+        </div>
+
+        <!-- Alerts List -->
+        <div class="alerts-list" id="alertsContainer">
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <h4>No alerts yet</h4>
+                <p>Your farm is looking good! Alerts will appear here when needed.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let allAlerts = [];
+
+        // Initialize
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/auth';
+                return;
+            }
+
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            document.getElementById('userName').textContent = user.username || 'User';
+            
+            loadAlerts();
+        });
+
+        // Load alerts
+        async function loadAlerts() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/alerts', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const alerts = await response.json();
+                    allAlerts = Array.isArray(alerts) ? alerts : (alerts.alerts || []);
+                    displayAlerts(allAlerts);
+                    updateStatistics();
+                }
+            } catch (error) {
+                console.error('Load alerts error:', error);
+            }
+        }
+
+        // Display alerts
+        function displayAlerts(alerts) {
+            const container = document.getElementById('alertsContainer');
+            
+            if (alerts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bell-slash"></i>
+                        <h4>No alerts yet</h4>
+                        <p>Your farm is looking good! Alerts will appear here when needed.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = alerts.map(alert => {
+                const isUnread = !alert.read;
+                const timeAgo = getTimeAgo(new Date(alert.created_at));
+                
+                let severityClass = 'info';
+                let severityIcon = 'fa-info-circle';
+                
+                if (alert.severity === 'Critical') {
+                    severityClass = 'critical';
+                    severityIcon = 'fa-exclamation-circle';
+                } else if (alert.severity === 'Warning') {
+                    severityClass = 'warning';
+                    severityIcon = 'fa-exclamation-triangle';
+                } else if (alert.severity === 'Success') {
+                    severityClass = 'success';
+                    severityIcon = 'fa-check-circle';
+                }
+
+                return `
+                    <div class="alert-item ${isUnread ? 'unread' : ''}" id="alert-${alert.id}">
+                        <div class="alert-icon ${severityClass}">
+                            <i class="fas ${severityIcon}"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-header">
+                                <div class="alert-title">${alert.title}</div>
+                                <div class="alert-badges">
+                                    <span class="alert-badge badge-${severityClass.toLowerCase()}">${alert.severity}</span>
+                                    ${isUnread ? '<span class="alert-badge badge-unread">NEW</span>' : ''}
+                                </div>
+                            </div>
+                            <div class="alert-message">${alert.message}</div>
+                            <div class="alert-footer">
+                                <div>
+                                    <div class="alert-time"><i class="fas fa-clock"></i> ${timeAgo}</div>
+                                    <div class="alert-details">
+                                        <i class="fas fa-seedling"></i> Crop #${alert.crop_id || 'N/A'} | 
+                                        <i class="fas fa-map-pin"></i> Farm #${alert.farm_id || 'N/A'}
+                                    </div>
+                                </div>
+                                <div class="alert-actions">
+                                    ${isUnread ? `
+                                        <button class="action-btn btn-mark" onclick="markAsRead(${alert.id})">
+                                            <i class="fas fa-check"></i> Mark as Read
+                                        </button>
+                                    ` : ''}
+                                    <button class="action-btn btn-delete" onclick="deleteAlert(${alert.id})">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Get time ago
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+            
+            return date.toLocaleDateString();
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            const critical = allAlerts.filter(a => a.severity === 'Critical').length;
+            const warning = allAlerts.filter(a => a.severity === 'Warning').length;
+            const unread = allAlerts.filter(a => !a.read).length;
+
+            document.getElementById('criticalCount').textContent = critical;
+            document.getElementById('warningCount').textContent = warning;
+            document.getElementById('totalCount').textContent = allAlerts.length;
+            document.getElementById('unreadCount').textContent = unread;
+            document.getElementById('alertCountBadge').textContent = unread > 0 ? unread : '';
+        }
+
+        // Filter alerts
+        function filterAlerts() {
+            const severity = document.getElementById('severityFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const type = document.getElementById('typeFilter').value;
+
+            const filtered = allAlerts.filter(alert => {
+                const matchSeverity = !severity || alert.severity === severity;
+                const matchStatus = !status || (status === 'unread' ? !alert.read : alert.read);
+                const matchType = !type || (alert.alert_type || 'Info') === type;
+                return matchSeverity && matchStatus && matchType;
+            });
+
+            displayAlerts(filtered);
+        }
+
+        // Mark as read
+        async function markAsRead(alertId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/alerts/${alertId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ read: true })
+                });
+
+                if (response.ok) {
+                    loadAlerts();
+                }
+            } catch (error) {
+                console.error('Mark as read error:', error);
+            }
+        }
+
+        // Mark all as read
+        async function markAllAsRead() {
+            try {
+                const token = localStorage.getItem('token');
+                for (const alert of allAlerts.filter(a => !a.read)) {
+                    await fetch(`/api/alerts/${alert.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ read: true })
+                    });
+                }
+                loadAlerts();
+            } catch (error) {
+                console.error('Mark all as read error:', error);
+            }
+        }
+
+        // Delete alert
+        async function deleteAlert(alertId) {
+            if (!confirm('Are you sure you want to delete this alert?')) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/alerts/${alertId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    document.getElementById('alert-' + alertId).remove();
+                    allAlerts = allAlerts.filter(a => a.id !== alertId);
+                    updateStatistics();
+                }
+            } catch (error) {
+                console.error('Delete alert error:', error);
+            }
+        }
+
+        // Clear all alerts
+        async function clearAllAlerts() {
+            if (!confirm('Are you sure you want to delete all alerts? This cannot be undone.')) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                for (const alert of allAlerts) {
+                    await fetch(`/api/alerts/${alert.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                }
+                loadAlerts();
+            } catch (error) {
+                console.error('Clear alerts error:', error);
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/auth';
+        }
+    </script>
+</body>
+</html>

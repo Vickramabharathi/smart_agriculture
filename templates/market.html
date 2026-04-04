@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Intelligence</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .price-card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+        .price-card:hover {
+            transform: translateY(-5px);
+        }
+        .price-trend {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .trend-up {
+            color: #28a745;
+        }
+        .trend-down {
+            color: #dc3545;
+        }
+        .trend-stable {
+            color: #ffc107;
+        }
+        .market-stats {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 15px;
+        }
+        .alert-high {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+        .alert-medium {
+            background: linear-gradient(135deg, #ffd93d 0%, #ff8c42 100%);
+            color: white;
+        }
+        .crop-selector {
+            margin-bottom: 20px;
+        }
+        .recommendation-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        .season-indicator {
+            background: #e8f5e8;
+            border: 2px solid #28a745;
+            border-radius: 20px;
+            padding: 5px 15px;
+            display: inline-block;
+            margin: 2px;
+        }
+        .season-indicator.off-season {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-leaf"></i> Smart Agriculture
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/dashboard">Dashboard</a>
+                <a class="nav-link" href="/crops">Crops</a>
+                <a class="nav-link" href="/alerts">Alerts</a>
+                <a class="nav-link" href="/chatbot">Chatbot</a>
+                <a class="nav-link" href="/map">Map</a>
+                <a class="nav-link active" href="/market">Market</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Market Overview Stats -->
+        <div class="market-stats">
+            <div class="row">
+                <div class="col-md-3">
+                    <h5><i class="fas fa-chart-line"></i> Market Trend</h5>
+                    <h3 id="overallTrend">Loading...</h3>
+                </div>
+                <div class="col-md-3">
+                    <h5><i class="fas fa-percentage"></i> Avg Change</h5>
+                    <h3 id="avgChange">Loading...</h3>
+                </div>
+                <div class="col-md-3">
+                    <h5><i class="fas fa-arrow-up"></i> Rising Crops</h5>
+                    <h3 id="risingCount">Loading...</h3>
+                </div>
+                <div class="col-md-3">
+                    <h5><i class="fas fa-bell"></i> Active Alerts</h5>
+                    <h3 id="alertCount">Loading...</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Alerts -->
+        <div id="marketAlerts" class="mb-4">
+            <!-- Alerts will be loaded here -->
+        </div>
+
+        <div class="row">
+            <!-- Crop Price Cards -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-rupee-sign"></i> Crop Prices (INR per Quintal)</h4>
+                        <div class="crop-selector">
+                            <select id="cropSelector" class="form-select">
+                                <option value="">Select a crop for detailed view</option>
+                                <option value="wheat">Wheat</option>
+                                <option value="rice">Rice</option>
+                                <option value="cotton">Cotton</option>
+                                <option value="sugarcane">Sugarcane</option>
+                                <option value="maize">Maize</option>
+                                <option value="soybean">Soybean</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="priceCards" class="row">
+                            <!-- Price cards will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price Chart -->
+                <div class="card mt-4" id="priceChartCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 id="chartTitle">Price Trend</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations Sidebar -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-lightbulb"></i> Market Insights</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="marketInsights">
+                            <!-- Insights will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4" id="recommendationsCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 id="recommendationsTitle">Selling Recommendations</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recommendationsContent">
+                            <!-- Recommendations will be loaded here -->
+                        </div>
+                        <div id="seasonalInfo" class="mt-3">
+                            <!-- Seasonal information will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentCrop = '';
+        let priceChart = null;
+
+        // Load market data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMarketOverview();
+            loadMarketAlerts();
+            loadCropPrices();
+        });
+
+        function loadMarketOverview() {
+            fetch('/api/marketplace/trends')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('overallTrend').textContent = data.overall_trend.charAt(0).toUpperCase() + data.overall_trend.slice(1);
+                    document.getElementById('avgChange').textContent = data.average_change_percent > 0 ? '+' + data.average_change_percent + '%' : data.average_change_percent + '%';
+                    document.getElementById('risingCount').textContent = data.trend_distribution.up;
+
+                    // Load alerts count
+                    fetch('/api/marketplace/alerts')
+                        .then(response => response.json())
+                        .then(alertData => {
+                            document.getElementById('alertCount').textContent = alertData.total_alerts;
+                        });
+                })
+                .catch(error => console.error('Error loading market overview:', error));
+        }
+
+        function loadMarketAlerts() {
+            fetch('/api/marketplace/alerts')
+                .then(response => response.json())
+                .then(data => {
+                    const alertsContainer = document.getElementById('marketAlerts');
+
+                    if (data.alerts.length === 0) {
+                        alertsContainer.innerHTML = '<div class="alert alert-info">No active market alerts at this time.</div>';
+                        return;
+                    }
+
+                    let alertsHtml = '';
+                    data.alerts.forEach(alert => {
+                        const alertClass = alert.priority === 'high' ? 'alert-high' : 'alert-medium';
+                        const icon = alert.type === 'price_increase' ? 'fas fa-arrow-up' :
+                                   alert.type === 'price_decrease' ? 'fas fa-arrow-down' :
+                                   'fas fa-calendar-alt';
+
+                        alertsHtml += `
+                            <div class="alert alert-custom ${alertClass}">
+                                <i class="${icon}"></i> <strong>${alert.crop.charAt(0).toUpperCase() + alert.crop.slice(1)}:</strong> ${alert.message}
+                            </div>
+                        `;
+                    });
+
+                    alertsContainer.innerHTML = alertsHtml;
+                })
+                .catch(error => console.error('Error loading market alerts:', error));
+        }
+
+        function loadCropPrices() {
+            fetch('/api/marketplace/prices')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('priceCards');
+                    let html = '';
+
+                    Object.entries(data.prices).forEach(([crop, info]) => {
+                        const trendClass = info.trend === 'up' ? 'trend-up' :
+                                         info.trend === 'down' ? 'trend-down' : 'trend-stable';
+                        const trendIcon = info.trend === 'up' ? 'fas fa-arrow-up' :
+                                        info.trend === 'down' ? 'fas fa-arrow-down' : 'fas fa-minus';
+                        const changeText = info.change_percent > 0 ? '+' + info.change_percent : info.change_percent;
+
+                        html += `
+                            <div class="col-md-6">
+                                <div class="card price-card" onclick="selectCrop('${crop}')">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="card-title">${crop.charAt(0).toUpperCase() + crop.slice(1)}</h5>
+                                            <span class="badge bg-${info.demand === 'high' ? 'success' : info.demand === 'medium' ? 'warning' : 'secondary'}">${info.demand} demand</span>
+                                        </div>
+                                        <h3 class="price-trend ${trendClass}">
+                                            ₹${info.current_price.toLocaleString()}
+                                            <small class="ms-2">
+                                                <i class="${trendIcon}"></i> ${changeText}%
+                                            </small>
+                                        </h3>
+                                        <p class="text-muted mb-2">per quintal</p>
+                                        <div>
+                                            <small class="text-muted">Best months: ${info.best_selling_months.join(', ')}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                })
+                .catch(error => console.error('Error loading crop prices:', error));
+        }
+
+        function selectCrop(crop) {
+            currentCrop = crop;
+            document.getElementById('cropSelector').value = crop;
+
+            // Load detailed crop information
+            loadCropDetails(crop);
+            loadRecommendations(crop);
+        }
+
+        function loadCropDetails(crop) {
+            fetch(`/api/marketplace/prices/${crop}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Show price chart
+                    document.getElementById('chartTitle').textContent = `${crop.charAt(0).toUpperCase() + crop.slice(1)} Price Trend (Last 30 Days)`;
+                    document.getElementById('priceChartCard').style.display = 'block';
+
+                    // Destroy existing chart
+                    if (priceChart) {
+                        priceChart.destroy();
+                    }
+
+                    const ctx = document.getElementById('priceChart').getContext('2d');
+                    priceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.historical_prices.map(item => item.date),
+                            datasets: [{
+                                label: 'Price (INR)',
+                                data: data.historical_prices.map(item => item.price),
+                                borderColor: '#28a745',
+                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: false
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error loading crop details:', error));
+        }
+
+        function loadRecommendations(crop) {
+            fetch(`/api/marketplace/recommendations/${crop}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('recommendationsTitle').textContent = `${crop.charAt(0).toUpperCase() + crop.slice(1)} Recommendations`;
+                    document.getElementById('recommendationsCard').style.display = 'block';
+
+                    let recommendationsHtml = '';
+                    data.recommendations.forEach(rec => {
+                        recommendationsHtml += `<div class="recommendation-card">${rec}</div>`;
+                    });
+
+                    document.getElementById('recommendationsContent').innerHTML = recommendationsHtml;
+
+                    // Show seasonal information
+                    const currentMonth = data.current_month;
+                    const bestMonths = data.best_selling_months;
+                    const isBestSeason = bestMonths.includes(currentMonth);
+
+                    const seasonalHtml = `
+                        <h6>Seasonal Timing</h6>
+                        <div class="season-indicator ${isBestSeason ? '' : 'off-season'}">
+                            <i class="fas fa-calendar"></i>
+                            ${currentMonth}: ${isBestSeason ? 'Peak Season' : 'Off-Peak'}
+                        </div>
+                        <small class="text-muted">Best selling months: ${bestMonths.join(', ')}</small>
+                    `;
+
+                    document.getElementById('seasonalInfo').innerHTML = seasonalHtml;
+                })
+                .catch(error => console.error('Error loading recommendations:', error));
+        }
+
+        // Crop selector event listener
+        document.getElementById('cropSelector').addEventListener('change', function(e) {
+            const selectedCrop = e.target.value;
+            if (selectedCrop) {
+                selectCrop(selectedCrop);
+            } else {
+                // Hide detailed views
+                document.getElementById('priceChartCard').style.display = 'none';
+                document.getElementById('recommendationsCard').style.display = 'none';
+                currentCrop = '';
+            }
+        });
+
+        // Load market insights
+        fetch('/api/marketplace/trends')
+            .then(response => response.json())
+            .then(data => {
+                const insightsContainer = document.getElementById('marketInsights');
+                let insightsHtml = '';
+
+                data.market_insights.forEach(insight => {
+                    insightsHtml += `<div class="recommendation-card">${insight}</div>`;
+                });
+
+                insightsContainer.innerHTML = insightsHtml;
+            })
+            .catch(error => console.error('Error loading market insights:', error));
+    </script>
+</body>
+</html>
