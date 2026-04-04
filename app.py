@@ -63,6 +63,9 @@ def create_app(config_name=None):
             message = str(error)
 
         app.logger.exception('Unhandled exception')
+        app.logger.error(f'Error details: {message}')
+        app.logger.error(f'Request path: {request.path}')
+        app.logger.error(f'Request method: {request.method}')
 
         if request.path.startswith('/api/'):
             return jsonify({'message': 'Server error', 'details': message}), status
