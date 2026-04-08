@@ -14,6 +14,7 @@ class Config:
     
     # External APIs
     OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY') or "1dc8367105e7083aeef7dd2f25a3ae32"
+    MARKET_API_KEY = os.environ.get('MARKET_API_KEY') or "579b464db66ec23bdd000001dee7d21cee8745ba48a11146d3a34910"
     TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID') or ""
     TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN') or ""
     TWILIO_PHONE = os.environ.get('TWILIO_PHONE') or ""

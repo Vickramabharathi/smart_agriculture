@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, jsonify
 from werkzeug.exceptions import HTTPException
 from config.config import config
 from models.database import db
+from flask_cors import CORS
 import requests
 from datetime import datetime
 import random
@@ -33,6 +34,9 @@ def create_app(config_name=None):
     
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+    
+    # Initialize CORS
+    CORS(app)
     
     # Initialize database (dummy in-memory implementation)
     db.init_app(app)
